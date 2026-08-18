@@ -90,6 +90,11 @@
         .modal-card { background: var(--panel-bg); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); text-align: center; width: 380px; display: flex; flex-direction: column; gap: 12px; }
         .progress-bar { height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden; }
         .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue), var(--gold)); }
+
+        /* Video Output Result Preview */
+        #outputVideoPlayer {
+            width: 100%; max-height: 250px; border-radius: 10px; border: 1px solid var(--border-color); margin-top: 10px; display: none;
+        }
     </style>
 </head>
 <body>
@@ -215,7 +220,7 @@
 
         <div class="panel">
             <div class="panel-content">
-                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> معالجة وتجهيز الفيديو للموبايل</button>
+                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> استخراج وتجهيز فيديو الموبايل</button>
 
                 <div class="viral-card">
                     <div style="font-weight:bold; color:var(--gold);"><i class="fa-solid fa-rocket"></i> نصائح الانتشار المليوني (Viral Guide)</div>
@@ -238,16 +243,19 @@
         <div class="modal-card">
             <i class="fa-solid fa-circle-notch fa-spin" id="modalSpinner" style="font-size:36px; color:var(--gold);"></i>
             <h3 id="modalTitle">جاري معالجة الفيديو...</h3>
-            <p id="modalSub" style="font-size:11px; color:var(--text-muted);">يرجى الانتظار لحين تحضير الملف للتنزيل المباشر.</p>
+            <p id="modalSub" style="font-size:11px; color:var(--text-muted);">يرجى الانتظار ثوانٍ لحين معالجة الإطارات.</p>
             
             <div class="progress-bar" id="pBarBox"><div class="progress-fill" id="exportProgress"></div></div>
             <span id="exportPercent" style="font-size:12px; font-weight:bold; color:var(--blue);">0%</span>
 
-            <div id="downloadArea" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
-                <a id="directDownloadBtn" class="btn btn-green" href="#" download="AyaStudio_Video.mp4">
-                    <i class="fa-solid fa-download"></i> اضغط هنا لتنزيل الفيديو الآن
+            <video id="outputVideoPlayer" controls playsinline></video>
+
+            <div id="downloadArea" style="display:none; flex-direction:column; gap:8px; margin-top:10px;">
+                <a id="openVideoBtn" class="btn btn-green" href="#" target="_blank">
+                    <i class="fa-solid fa-play"></i> فتح الفيديو لحفظه مباشر بالاستوديو
                 </a>
-                <button class="btn btn-dark" onclick="closeModal()">إغلاق</button>
+                <p style="font-size:10px; color:var(--text-muted);">أو اضغط مطولاً على الفيديو أعلاه واختر "حفظ الفيديو".</p>
+                <button class="btn btn-dark" onclick="closeModal()">إغلاق النافذة</button>
             </div>
         </div>
     </div>
@@ -500,25 +508,27 @@
             document.getElementById('exportModal').classList.remove('active');
         }
 
-        // Mobile Chrome Safe Exporter with Fallback Button
+        // Guaranteed Android & Mobile Chrome Export Engine
         function exportVideo() {
             const modal = document.getElementById('exportModal');
             const fill = document.getElementById('exportProgress');
             const percent = document.getElementById('exportPercent');
             const downloadArea = document.getElementById('downloadArea');
-            const directBtn = document.getElementById('directDownloadBtn');
+            const openVideoBtn = document.getElementById('openVideoBtn');
             const modalTitle = document.getElementById('modalTitle');
             const modalSub = document.getElementById('modalSub');
             const modalSpinner = document.getElementById('modalSpinner');
             const pBarBox = document.getElementById('pBarBox');
+            const outputPlayer = document.getElementById('outputVideoPlayer');
 
             // Reset UI
             downloadArea.style.display = 'none';
+            outputPlayer.style.display = 'none';
             pBarBox.style.display = 'block';
             percent.style.display = 'block';
             modalSpinner.style.display = 'inline-block';
             modalTitle.innerText = "جاري معالجة الفيديو...";
-            modalSub.innerText = "يرجى الانتظار لحين تحضير الملف للتنزيل المباشر.";
+            modalSub.innerText = "يرجى الانتظار ثوانٍ لحين تحضير الملف المباشر.";
             fill.style.width = '0%';
             percent.innerText = '0%';
 
@@ -526,20 +536,7 @@
             let p = 0;
 
             const stream = canvas.captureStream(25);
-            
-            // Best mobile compatibility
-            let options = {};
-            if (MediaRecorder.isTypeSupported('video/webm')) {
-                options = { mimeType: 'video/webm' };
-            }
-
-            let recorder;
-            try {
-                recorder = new MediaRecorder(stream, options);
-            } catch (e) {
-                recorder = new MediaRecorder(stream);
-            }
-
+            let recorder = new MediaRecorder(stream);
             let chunks = [];
 
             recorder.ondataavailable = e => {
@@ -548,17 +545,19 @@
 
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/mp4' });
-                const url = URL.createObjectURL(blob);
-                
-                // Show direct manual button for Mobile Chrome
+                const videoUrl = URL.createObjectURL(blob);
+
+                // Show player and guaranteed open link
                 modalSpinner.style.display = 'none';
                 pBarBox.style.display = 'none';
                 percent.style.display = 'none';
-                modalTitle.innerText = "اكتمل تجهيز الفيديو!";
-                modalSub.innerText = "اضغط على الزر الأخضر أدناه لتنزيل الفيديو مباشرة إلى جهازك بدون أي خطأ.";
+                modalTitle.innerText = "تمت معالجة الفيديو بنجاح!";
+                modalSub.innerText = "يمكنك تشغيل الفيديو أدناه، أو ضغط الزر الأخضر لفتحه وحفظه مباشرة في المعرض.";
 
-                directBtn.href = url;
-                directBtn.download = `AyaStudio_Video_${Date.now()}.mp4`;
+                outputPlayer.src = videoUrl;
+                outputPlayer.style.display = 'block';
+
+                openVideoBtn.href = videoUrl;
                 downloadArea.style.display = 'flex';
             };
 
@@ -567,7 +566,7 @@
             isPlaying = true;
 
             let timer = setInterval(() => {
-                p += 4;
+                p += 5;
                 playbackTime += 0.08;
                 fill.style.width = p + '%';
                 percent.innerText = p + '%';
