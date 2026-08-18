@@ -83,17 +83,16 @@
         .tag { background: rgba(59,130,246,0.2); color: #60a5fa; padding: 2px 6px; border-radius: 6px; font-size: 10px; }
 
         .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
             display: flex; justify-content: center; align-items: center; z-index: 999; opacity: 0; pointer-events: none; transition: 0.3s;
         }
         .modal.active { opacity: 1; pointer-events: all; }
-        .modal-card { background: var(--panel-bg); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); text-align: center; width: 380px; display: flex; flex-direction: column; gap: 12px; }
+        .modal-card { background: var(--panel-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border-color); text-align: center; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .progress-bar { height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden; }
         .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue), var(--gold)); }
 
-        /* Video Output Result Preview */
-        #outputVideoPlayer {
-            width: 100%; max-height: 250px; border-radius: 10px; border: 1px solid var(--border-color); margin-top: 10px; display: none;
+        #renderedVideoPlayer {
+            width: 100%; max-height: 280px; border-radius: 10px; border: 1px solid var(--border-color); background: #000; display: none; margin-top: 5px;
         }
     </style>
 </head>
@@ -151,7 +150,7 @@
                         <label>رفع فيديو الخلفية (تكرار تلقائي Auto-Loop)</label>
                         <div class="upload-box" onclick="document.getElementById('videoFile').click()">
                             <i class="fa-solid fa-video" style="color:var(--blue); font-size:20px;"></i>
-                            <div style="font-size:11px; margin-top:4px;">اختر مقطع الخلفية (15 ثانية أو أكثر)</div>
+                            <div style="font-size:11px; margin-top:4px;">اختر مقطع الخلفية</div>
                         </div>
                         <input type="file" id="videoFile" accept="video/*" style="display:none;" onchange="loadVideo(event)">
                     </div>
@@ -160,7 +159,7 @@
                         <label>رفع الملف الصوتي / التلاوة</label>
                         <div class="upload-box" onclick="document.getElementById('audioFile').click()">
                             <i class="fa-solid fa-file-audio" style="color:var(--gold); font-size:20px;"></i>
-                            <div style="font-size:11px; margin-top:4px;">اختر ملف الصوت (دقيقة أو أكثر)</div>
+                            <div style="font-size:11px; margin-top:4px;">اختر ملف الصوت</div>
                         </div>
                         <input type="file" id="audioFile" accept="audio/*" style="display:none;" onchange="loadAudio(event)">
                     </div>
@@ -220,18 +219,16 @@
 
         <div class="panel">
             <div class="panel-content">
-                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> استخراج وتجهيز فيديو الموبايل</button>
+                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> معالجة وتصنيع الفيديو للجميع</button>
 
                 <div class="viral-card">
                     <div style="font-weight:bold; color:var(--gold);"><i class="fa-solid fa-rocket"></i> نصائح الانتشار المليوني (Viral Guide)</div>
                     <p>1. **التوقيت الذهبي:** انشر المقاطع بين 8:00 إلى 10:00 مساءً.</p>
-                    <p>2. **الـ Hook الأولي:** آية الكرسي والموجات المتحركة تزيد نسبة البقاء على الفيديو (Watch Time) بنسبة 80%.</p>
-                    <p>3. **الوسوم المفتاحية:**</p>
-                    <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                    <p>2. **الـ Hook الأولي:** آية الكرسي والموجات المتحركة تزيد نسبة البقاء على الفيديو بنسبة 80%.</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
                         <span class="tag">#قران_كريم</span>
                         <span class="tag">#آية_الكرسي</span>
                         <span class="tag">#fyp</span>
-                        <span class="tag">#viral</span>
                     </div>
                 </div>
             </div>
@@ -243,18 +240,18 @@
         <div class="modal-card">
             <i class="fa-solid fa-circle-notch fa-spin" id="modalSpinner" style="font-size:36px; color:var(--gold);"></i>
             <h3 id="modalTitle">جاري معالجة الفيديو...</h3>
-            <p id="modalSub" style="font-size:11px; color:var(--text-muted);">يرجى الانتظار ثوانٍ لحين معالجة الإطارات.</p>
+            <p id="modalSub" style="font-size:11px; color:var(--text-muted);">يرجى الانتظار لحين تحضير الملف التوافقي.</p>
             
             <div class="progress-bar" id="pBarBox"><div class="progress-fill" id="exportProgress"></div></div>
             <span id="exportPercent" style="font-size:12px; font-weight:bold; color:var(--blue);">0%</span>
 
-            <video id="outputVideoPlayer" controls playsinline></video>
+            <video id="renderedVideoPlayer" controls playsinline></video>
 
             <div id="downloadArea" style="display:none; flex-direction:column; gap:8px; margin-top:10px;">
-                <a id="openVideoBtn" class="btn btn-green" href="#" target="_blank">
-                    <i class="fa-solid fa-play"></i> فتح الفيديو لحفظه مباشر بالاستوديو
+                <a id="downloadLinkBtn" class="btn btn-green" href="#" download="AyaStudio_Video.webm">
+                    <i class="fa-solid fa-download"></i> تنزيل الفيديو مباشرة إلى الاستوديو
                 </a>
-                <p style="font-size:10px; color:var(--text-muted);">أو اضغط مطولاً على الفيديو أعلاه واختر "حفظ الفيديو".</p>
+                <p style="font-size:10px; color:var(--text-muted);">إذا لم يبدأ التنزيل تلقائياً، اضغط مطولاً على الفيديو أعلاه واضغط "حفظ الفيديو".</p>
                 <button class="btn btn-dark" onclick="closeModal()">إغلاق النافذة</button>
             </div>
         </div>
@@ -339,27 +336,14 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // Draw Auto-Looped Background Video
             if (videoElem && videoElem.readyState >= 2) {
-                try {
-                    ctx.drawImage(videoElem, 0, 0, w, h);
-                } catch(e) {
-                    fillGradient(w, h);
-                }
-            } else {
-                fillGradient(w, h);
-            }
+                try { ctx.drawImage(videoElem, 0, 0, w, h); } catch(e) { fillGradient(w, h); }
+            } else { fillGradient(w, h); }
 
-            // Dark Overlay
             ctx.fillStyle = 'rgba(0,0,0,0.45)';
             ctx.fillRect(0, 0, w, h);
 
-            // Draw Dynamic Waveforms
-            if (document.getElementById('waveToggle').checked) {
-                drawWaveform(w, h);
-            }
-
-            // Draw Timed / Synchronized Text
+            if (document.getElementById('waveToggle').checked) drawWaveform(w, h);
             drawText(w, h);
         }
 
@@ -399,8 +383,7 @@
                 for (let i = 0; i < dataArray.length; i++) {
                     let v = dataArray[i] / 128.0;
                     let y = (v * 50) + (h * 0.75);
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                     x += sliceWidth;
                 }
                 ctx.stroke();
@@ -418,16 +401,9 @@
             let textToShow = document.getElementById('fullText').value;
 
             if (syncToggle) {
-                let currentTime = 0;
-                if (audioElem && audioElem.currentTime > 0) {
-                    currentTime = audioElem.currentTime;
-                } else {
-                    currentTime = playbackTime;
-                }
-                
+                let currentTime = (audioElem && audioElem.currentTime > 0) ? audioElem.currentTime : playbackTime;
                 let visibleWordsCount = Math.floor(currentTime * speed);
                 if (visibleWordsCount < 1 && isPlaying) visibleWordsCount = 1;
-                
                 if (isPlaying || playbackTime > 0) {
                     textToShow = wordsArray.slice(0, Math.min(visibleWordsCount, wordsArray.length)).join(' ');
                 }
@@ -508,27 +484,26 @@
             document.getElementById('exportModal').classList.remove('active');
         }
 
-        // Guaranteed Android & Mobile Chrome Export Engine
+        // Guaranteed Cross-Platform Export Engine
         function exportVideo() {
             const modal = document.getElementById('exportModal');
             const fill = document.getElementById('exportProgress');
             const percent = document.getElementById('exportPercent');
             const downloadArea = document.getElementById('downloadArea');
-            const openVideoBtn = document.getElementById('openVideoBtn');
+            const downloadBtn = document.getElementById('downloadLinkBtn');
             const modalTitle = document.getElementById('modalTitle');
             const modalSub = document.getElementById('modalSub');
             const modalSpinner = document.getElementById('modalSpinner');
             const pBarBox = document.getElementById('pBarBox');
-            const outputPlayer = document.getElementById('outputVideoPlayer');
+            const videoPlayer = document.getElementById('renderedVideoPlayer');
 
-            // Reset UI
             downloadArea.style.display = 'none';
-            outputPlayer.style.display = 'none';
+            videoPlayer.style.display = 'none';
             pBarBox.style.display = 'block';
             percent.style.display = 'block';
             modalSpinner.style.display = 'inline-block';
             modalTitle.innerText = "جاري معالجة الفيديو...";
-            modalSub.innerText = "يرجى الانتظار ثوانٍ لحين تحضير الملف المباشر.";
+            modalSub.innerText = "يرجى الانتظار ثوانٍ لحين تجهيز الملف للتنزيل المباشر.";
             fill.style.width = '0%';
             percent.innerText = '0%';
 
@@ -536,7 +511,16 @@
             let p = 0;
 
             const stream = canvas.captureStream(25);
-            let recorder = new MediaRecorder(stream);
+            
+            // Selected native Chrome Android WebM format
+            let mimeType = 'video/webm';
+            if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                mimeType = 'video/webm;codecs=vp9';
+            } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                mimeType = 'video/webm;codecs=vp8';
+            }
+
+            let recorder = new MediaRecorder(stream, { mimeType: mimeType });
             let chunks = [];
 
             recorder.ondataavailable = e => {
@@ -544,21 +528,29 @@
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/mp4' });
+                const blob = new Blob(chunks, { type: 'video/webm' });
                 const videoUrl = URL.createObjectURL(blob);
 
-                // Show player and guaranteed open link
                 modalSpinner.style.display = 'none';
                 pBarBox.style.display = 'none';
                 percent.style.display = 'none';
-                modalTitle.innerText = "تمت معالجة الفيديو بنجاح!";
-                modalSub.innerText = "يمكنك تشغيل الفيديو أدناه، أو ضغط الزر الأخضر لفتحه وحفظه مباشرة في المعرض.";
+                modalTitle.innerText = "اكتمل معالجة الفيديو بنجاح!";
+                modalSub.innerText = "تم إنشاء الملف بنجاح بدون أي أخطاء.";
 
-                outputPlayer.src = videoUrl;
-                outputPlayer.style.display = 'block';
+                videoPlayer.src = videoUrl;
+                videoPlayer.style.display = 'block';
 
-                openVideoBtn.href = videoUrl;
+                downloadBtn.href = videoUrl;
+                downloadBtn.download = `AyaStudio_${Date.now()}.webm`;
                 downloadArea.style.display = 'flex';
+
+                // Auto Trigger Download
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = `AyaStudio_${Date.now()}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             };
 
             recorder.start();
