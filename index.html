@@ -99,7 +99,7 @@
             <span>AyaStudio <span>Ultra 4K</span></span>
         </div>
         <div style="display:flex; gap:10px;">
-            <button class="btn btn-dark" onclick="setPreset('ayat_kursi')"><i class="fa-solid fa-book-open"></i> تحميل آية الكرسي كاملة</button>
+            <button class="btn btn-dark" onclick="applyPreset('ayat_kursi')"><i class="fa-solid fa-book-open"></i> تحميل آية الكرسي كاملة</button>
         </div>
     </header>
 
@@ -135,8 +135,8 @@
                     </div>
                     
                     <div class="field">
-                        <label>سرعة إظهار الكلمات للأنيميشين التلقائي</label>
-                        <input type="range" id="syncSpeed" min="1" max="10" value="3">
+                        <label>سرعة ظهور الكلمات (<span id="speedVal">3</span> كلم/ثانية)</label>
+                        <input type="range" id="syncSpeed" min="1" max="10" value="3" oninput="document.getElementById('speedVal').innerText=this.value">
                     </div>
                 </div>
 
@@ -260,6 +260,7 @@
         let isVertical = true;
         let animId = null;
         let wordsArray = [];
+        let playbackTime = 0;
 
         window.onload = () => {
             applyPreset('ayat_kursi');
@@ -267,6 +268,7 @@
         };
 
         function applyPreset(key) {
+            document.getElementById('presetSelect').value = key;
             if (key !== 'custom') {
                 document.getElementById('fullText').value = presets[key];
             }
@@ -275,7 +277,7 @@
 
         function prepareSyncText() {
             const txt = document.getElementById('fullText').value;
-            wordsArray = txt.split(' ');
+            wordsArray = txt.trim().split(/\s+/);
             drawFrame();
         }
 
@@ -382,13 +384,24 @@
             const yPercent = parseInt(document.getElementById('textY').value) / 100;
             const fontSize = parseInt(document.getElementById('fontSize').value) * (isVertical ? 1.3 : 1);
             const fontFamily = document.getElementById('fontFamily').value;
+            const speed = parseInt(document.getElementById('syncSpeed').value);
 
             let textToShow = document.getElementById('fullText').value;
 
-            if (syncToggle && audioElem.duration && isPlaying) {
-                let progress = audioElem.currentTime / audioElem.duration;
-                let visibleWordsCount = Math.ceil(progress * wordsArray.length);
-                textToShow = wordsArray.slice(0, visibleWordsCount).join(' ');
+            if (syncToggle) {
+                let currentTime = 0;
+                if (audioElem && audioElem.currentTime > 0) {
+                    currentTime = audioElem.currentTime;
+                } else if (isPlaying) {
+                    currentTime = playbackTime;
+                }
+                
+                let visibleWordsCount = Math.floor(currentTime * speed);
+                if (visibleWordsCount < 1 && isPlaying) visibleWordsCount = 1;
+                
+                if (isPlaying) {
+                    textToShow = wordsArray.slice(0, Math.min(visibleWordsCount, wordsArray.length)).join(' ');
+                }
             }
 
             ctx.save();
@@ -424,6 +437,7 @@
         function togglePlay() {
             isPlaying = !isPlaying;
             if (isPlaying) {
+                playbackTime = 0;
                 if (videoElem) videoElem.play();
                 if (audioElem && audioElem.src) {
                     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -439,6 +453,7 @@
 
         function renderLoop() {
             if (isPlaying) {
+                playbackTime += 0.03;
                 drawFrame();
                 animId = requestAnimationFrame(renderLoop);
             }
@@ -460,6 +475,7 @@
             drawFrame();
         }
 
+        // Fixed Cross-Browser Export Logic
         function exportVideo() {
             const modal = document.getElementById('exportModal');
             const fill = document.getElementById('exportProgress');
@@ -469,23 +485,44 @@
             let p = 0;
 
             const stream = canvas.captureStream(30);
-            const recorder = new MediaRecorder(stream);
+            
+            // Check supported MIME types for universal download
+            let mimeType = 'video/webm';
+            if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                mimeType = 'video/webm;codecs=vp9';
+            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                mimeType = 'video/mp4';
+            }
+
+            const recorder = new MediaRecorder(stream, { mimeType: mimeType });
             let chunks = [];
 
-            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.ondataavailable = e => {
+                if (e.data && e.data.size > 0) chunks.push(e.data);
+            };
+
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/mp4' });
+                const blob = new Blob(chunks, { type: mimeType });
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `AyaStudio_4K_Export_${Date.now()}.mp4`;
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `AyaStudio_Video_${Date.now()}.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
+                document.body.appendChild(a);
                 a.click();
-                setTimeout(() => modal.classList.remove('active'), 500);
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    modal.classList.remove('active');
+                }, 500);
             };
 
             recorder.start();
+            playbackTime = 0;
 
             let timer = setInterval(() => {
-                p += 4;
+                p += 2;
+                playbackTime += 0.05;
                 fill.style.width = p + '%';
                 percent.innerText = p + '%';
                 drawFrame();
