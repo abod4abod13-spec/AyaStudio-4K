@@ -214,7 +214,7 @@
 
         <div class="panel">
             <div class="panel-content">
-                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> تصدير الفيديو 4K والتكرار</button>
+                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> تصدير الفيديو MP4 والتكرار</button>
 
                 <div class="viral-card">
                     <div style="font-weight:bold; color:var(--gold);"><i class="fa-solid fa-rocket"></i> نصائح الانتشار المليوني (Viral Guide)</div>
@@ -236,8 +236,8 @@
     <div class="modal" id="exportModal">
         <div class="modal-card">
             <i class="fa-solid fa-circle-notch fa-spin" style="font-size:36px; color:var(--gold);"></i>
-            <h3>جاري معالجة الفيديو وتكرار الخلفية...</h3>
-            <p style="font-size:11px; color:var(--text-muted);">يتم دمج الموجات الصوتية وعرض الكلمات بالتزامن مع تكرار الفيديو.</p>
+            <h3>جاري معالجة فيديو MP4...</h3>
+            <p style="font-size:11px; color:var(--text-muted);">يتم الدمج والتوليد بصيغة MP4 التوافقية الشاملة.</p>
             <div class="progress-bar"><div class="progress-fill" id="exportProgress"></div></div>
             <span id="exportPercent" style="font-size:12px; font-weight:bold; color:var(--blue);">0%</span>
         </div>
@@ -392,14 +392,14 @@
                 let currentTime = 0;
                 if (audioElem && audioElem.currentTime > 0) {
                     currentTime = audioElem.currentTime;
-                } else if (isPlaying) {
+                } else {
                     currentTime = playbackTime;
                 }
                 
                 let visibleWordsCount = Math.floor(currentTime * speed);
                 if (visibleWordsCount < 1 && isPlaying) visibleWordsCount = 1;
                 
-                if (isPlaying) {
+                if (isPlaying || playbackTime > 0) {
                     textToShow = wordsArray.slice(0, Math.min(visibleWordsCount, wordsArray.length)).join(' ');
                 }
             }
@@ -475,7 +475,7 @@
             drawFrame();
         }
 
-        // Fixed Cross-Browser Export Logic
+        // Dedicated Universal MP4 Exporter
         function exportVideo() {
             const modal = document.getElementById('exportModal');
             const fill = document.getElementById('exportProgress');
@@ -486,15 +486,19 @@
 
             const stream = canvas.captureStream(30);
             
-            // Check supported MIME types for universal download
-            let mimeType = 'video/webm';
-            if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-                mimeType = 'video/webm;codecs=vp9';
-            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-                mimeType = 'video/mp4';
+            // Priority check for H264 / MP4 mime types across iOS, Android, and Desktop
+            let options = { mimeType: 'video/mp4' };
+            if (!MediaRecorder.isTypeSupported('video/mp4')) {
+                if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E')) {
+                    options = { mimeType: 'video/mp4;codecs=avc1.42E01E' };
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
+                    options = { mimeType: 'video/webm;codecs=h264' };
+                } else {
+                    options = { mimeType: '' }; // Browser Default
+                }
             }
 
-            const recorder = new MediaRecorder(stream, { mimeType: mimeType });
+            const recorder = new MediaRecorder(stream, options);
             let chunks = [];
 
             recorder.ondataavailable = e => {
@@ -502,23 +506,25 @@
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: mimeType });
+                // Force MP4 file format output Blob
+                const blob = new Blob(chunks, { type: 'video/mp4' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `AyaStudio_Video_${Date.now()}.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
+                a.download = `AyaStudio_Video_${Date.now()}.mp4`;
                 document.body.appendChild(a);
                 a.click();
                 setTimeout(() => {
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                     modal.classList.remove('active');
-                }, 500);
+                }, 600);
             };
 
             recorder.start();
             playbackTime = 0;
+            isPlaying = true;
 
             let timer = setInterval(() => {
                 p += 2;
@@ -529,6 +535,7 @@
 
                 if (p >= 100) {
                     clearInterval(timer);
+                    isPlaying = false;
                     recorder.stop();
                 }
             }, 100);
