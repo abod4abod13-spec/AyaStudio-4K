@@ -72,11 +72,12 @@
 
         .btn {
             padding: 12px; border: none; border-radius: 8px; font-weight: 800; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;
+            display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; text-decoration: none;
         }
         .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
         .btn-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
         .btn-dark { background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-green { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
 
         .viral-card { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; font-size: 11px; display: flex; flex-direction: column; gap: 8px; }
         .tag { background: rgba(59,130,246,0.2); color: #60a5fa; padding: 2px 6px; border-radius: 6px; font-size: 10px; }
@@ -214,7 +215,7 @@
 
         <div class="panel">
             <div class="panel-content">
-                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> تصدير الفيديو MP4 والتكرار</button>
+                <button class="btn btn-gold" onclick="exportVideo()"><i class="fa-solid fa-file-video"></i> معالجة وتجهيز الفيديو للموبايل</button>
 
                 <div class="viral-card">
                     <div style="font-weight:bold; color:var(--gold);"><i class="fa-solid fa-rocket"></i> نصائح الانتشار المليوني (Viral Guide)</div>
@@ -235,11 +236,19 @@
 
     <div class="modal" id="exportModal">
         <div class="modal-card">
-            <i class="fa-solid fa-circle-notch fa-spin" style="font-size:36px; color:var(--gold);"></i>
-            <h3>جاري معالجة فيديو MP4...</h3>
-            <p style="font-size:11px; color:var(--text-muted);">يتم التصدير بأعلى توافق أمان لمنع أي خطأ تنزيل.</p>
-            <div class="progress-bar"><div class="progress-fill" id="exportProgress"></div></div>
+            <i class="fa-solid fa-circle-notch fa-spin" id="modalSpinner" style="font-size:36px; color:var(--gold);"></i>
+            <h3 id="modalTitle">جاري معالجة الفيديو...</h3>
+            <p id="modalSub" style="font-size:11px; color:var(--text-muted);">يرجى الانتظار لحين تحضير الملف للتنزيل المباشر.</p>
+            
+            <div class="progress-bar" id="pBarBox"><div class="progress-fill" id="exportProgress"></div></div>
             <span id="exportPercent" style="font-size:12px; font-weight:bold; color:var(--blue);">0%</span>
+
+            <div id="downloadArea" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
+                <a id="directDownloadBtn" class="btn btn-green" href="#" download="AyaStudio_Video.mp4">
+                    <i class="fa-solid fa-download"></i> اضغط هنا لتنزيل الفيديو الآن
+                </a>
+                <button class="btn btn-dark" onclick="closeModal()">إغلاق</button>
+            </div>
         </div>
     </div>
 
@@ -249,7 +258,7 @@
 
         const presets = {
             ayat_kursi: "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ",
-            fatiha: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ (1) الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ (2) الرَّحْمَٰنِ الرَّحِيمِ (3) مَالِكِ يَوْمِ الدِّينِ (4) إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ (5) اهْدِنا الصِّرَاطَ الْمُسْتَقِيمَ (6) صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ (7)"
+            fatiha: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ (1) الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ (2) الرَّحْمَٰنِ الرَّحِيمِ (3) مَالِكِ يَوْمِ الدِّينِ (4) إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ (5) اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ (6) صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ (7)"
         };
 
         let videoElem = null;
@@ -487,36 +496,46 @@
             drawFrame();
         }
 
-        // Safe Bulletproof Media Exporter
+        function closeModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+
+        // Mobile Chrome Safe Exporter with Fallback Button
         function exportVideo() {
             const modal = document.getElementById('exportModal');
             const fill = document.getElementById('exportProgress');
             const percent = document.getElementById('exportPercent');
+            const downloadArea = document.getElementById('downloadArea');
+            const directBtn = document.getElementById('directDownloadBtn');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalSub = document.getElementById('modalSub');
+            const modalSpinner = document.getElementById('modalSpinner');
+            const pBarBox = document.getElementById('pBarBox');
+
+            // Reset UI
+            downloadArea.style.display = 'none';
+            pBarBox.style.display = 'block';
+            percent.style.display = 'block';
+            modalSpinner.style.display = 'inline-block';
+            modalTitle.innerText = "جاري معالجة الفيديو...";
+            modalSub.innerText = "يرجى الانتظار لحين تحضير الملف للتنزيل المباشر.";
+            fill.style.width = '0%';
+            percent.innerText = '0%';
 
             modal.classList.add('active');
             let p = 0;
 
             const stream = canvas.captureStream(25);
             
-            // Safe cross-browser Supported Types detection
-            let supportedMime = '';
-            const types = [
-                'video/mp4;codecs=h264',
-                'video/mp4',
-                'video/webm;codecs=vp8',
-                'video/webm'
-            ];
-
-            for (let t of types) {
-                if (MediaRecorder.isTypeSupported(t)) {
-                    supportedMime = t;
-                    break;
-                }
+            // Best mobile compatibility
+            let options = {};
+            if (MediaRecorder.isTypeSupported('video/webm')) {
+                options = { mimeType: 'video/webm' };
             }
 
             let recorder;
             try {
-                recorder = supportedMime ? new MediaRecorder(stream, { mimeType: supportedMime }) : new MediaRecorder(stream);
+                recorder = new MediaRecorder(stream, options);
             } catch (e) {
                 recorder = new MediaRecorder(stream);
             }
@@ -528,24 +547,19 @@
             };
 
             recorder.onstop = () => {
-                const finalType = recorder.mimeType || 'video/mp4';
-                const blob = new Blob(chunks, { type: finalType });
-                
-                // Safe Direct Download Trigger
+                const blob = new Blob(chunks, { type: 'video/mp4' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `AyaStudio_Video_${Date.now()}.mp4`;
-                document.body.appendChild(a);
                 
-                // Direct Action Trigger
-                a.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                    modal.classList.remove('active');
-                }, 800);
+                // Show direct manual button for Mobile Chrome
+                modalSpinner.style.display = 'none';
+                pBarBox.style.display = 'none';
+                percent.style.display = 'none';
+                modalTitle.innerText = "اكتمل تجهيز الفيديو!";
+                modalSub.innerText = "اضغط على الزر الأخضر أدناه لتنزيل الفيديو مباشرة إلى جهازك بدون أي خطأ.";
+
+                directBtn.href = url;
+                directBtn.download = `AyaStudio_Video_${Date.now()}.mp4`;
+                downloadArea.style.display = 'flex';
             };
 
             recorder.start();
@@ -553,8 +567,8 @@
             isPlaying = true;
 
             let timer = setInterval(() => {
-                p += 2;
-                playbackTime += 0.05;
+                p += 4;
+                playbackTime += 0.08;
                 fill.style.width = p + '%';
                 percent.innerText = p + '%';
                 drawFrame();
